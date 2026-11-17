@@ -123,15 +123,35 @@ fn total_memory_bytes() -> Option<u64> {
     if let Some(limit) = crate::memory::cgroup_limit_bytes() {
         return Some(limit);
     }
-    let meminfo = std::fs::read_to_string("/proc/meminfo").ok()?;
-    let kb = meminfo
-        .lines()
-        .find(|line| line.starts_with("MemTotal:"))?
-        .split_whitespace()
-        .nth(1)?
-        .parse::<u64>()
-        .ok()?;
-    Some(kb.saturating_mul(1024))
+    let from_meminfo = std::fs::read_to_string("/proc/meminfo")
+        .ok()
+        .and_then(|meminfo| {
+            meminfo
+                .lines()
+                .find(|line| line.starts_with("MemTotal:"))?
+                .split_whitespace()
+                .nth(1)?
+                .parse::<u64>()
+                .ok()
+        })
+        .map(|kb| kb.saturating_mul(1024));
+    // A kernel without procfs, such as Unikraft, still answers sysinfo(2),
+    // which glibc's sysconf reads for the physical page count.
+    from_meminfo.or_else(physical_memory_from_sysconf)
+}
+
+#[cfg(target_os = "linux")]
+fn physical_memory_from_sysconf() -> Option<u64> {
+    // SAFETY: sysconf only reads system configuration values.
+    let (pages, page_size) = unsafe {
+        (
+            libc::sysconf(libc::_SC_PHYS_PAGES),
+            libc::sysconf(libc::_SC_PAGESIZE),
+        )
+    };
+    let pages = u64::try_from(pages).ok().filter(|pages| *pages > 0)?;
+    let page_size = u64::try_from(page_size).ok().filter(|size| *size > 0)?;
+    pages.checked_mul(page_size)
 }
 
 #[cfg(target_os = "macos")]

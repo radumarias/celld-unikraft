@@ -13,6 +13,8 @@ An inactive cell costs almost nothing. Learn more at
 [celld.dev](https://celld.dev) or read the
 [documentation](https://celld.dev/docs).
 
+> **This fork** runs celld nodes as [Unikraft](https://unikraft.org) unikernels. See [UNIKRAFT.md](UNIKRAFT.md), or run `unikraft/run-local.sh`.
+
 ## How it works
 
 A node is one `celld` process, and you run one on each machine. Every
