@@ -1,0 +1,18 @@
+# celld on Unikraft's ELF loader. unikraft/run-local.sh builds the initrd into
+# .build/ and passes the bucket and its credentials with `kraft run -e`.
+spec: v0.6
+name: celld
+runtime: unikraft.org/base:latest
+rootfs: ./.build/rootfs.cpio
+cmd: ["/usr/local/bin/celld"]
+env:
+  # SQLite's WAL index needs a writable shared file mapping, which Unikraft
+  # does not provide. unix-excl keeps it in heap memory; one process owns
+  # every database, as it does in a unikernel.
+  CELLD_SQLITE_VFS: "unix-excl"
+  CELLD_WATCH: "/var/lib/celld/state"
+  CELLD_ADDR: "0.0.0.0:8080"
+  CELLD_INTERNAL_ADDR: "0.0.0.0:8081"
+  # QEMU's user network gives the guest this address.
+  CELLD_ADVERTISE: "10.0.2.15:8081"
+  HOME: "/root"

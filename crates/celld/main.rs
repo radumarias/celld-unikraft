@@ -3441,6 +3441,9 @@ const LOCAL_CACHE_PRUNE_PERIOD: std::time::Duration = std::time::Duration::from_
 
 fn main() -> anyhow::Result<()> {
     celld::env_vars::validate()?;
+    // Before any thread or connection opens a database: a connection keeps
+    // the VFS it opened with.
+    celld::sqlite_vfs::install_from_environment()?;
     // Parse the telemetry group once, before any command or runtime work.
     // Its specialized values share the strict scalar parsers in env_vars.
     let telemetry_config = celld::telemetry::Config::from_env()?;
